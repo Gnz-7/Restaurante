@@ -1,6 +1,13 @@
-com\restaurante\AdminCrear$1.class
-com\restaurante\Admin.class
-com\restaurante\Restaurante.class
 com\restaurante\CrearBaseDatos.class
-com\restaurante\AdminCrear.class
+com\restaurante\DatosEmpleado.class
+com\restaurante\Admin.class
+com\restaurante\BajaEmpleado.class
+com\restaurante\DatosEmpleado$1.class
+com\restaurante\VerEstadisticas.class
 com\restaurante\Empleado.class
+com\restaurante\VerEstadisticas$1.class
+com\restaurante\AgregarEmpleado$1.class
+com\restaurante\Admin$1.class
+com\restaurante\AgregarEmpleado.class
+com\restaurante\ModificarEmpleado.class
+com\restaurante\Restaurante.class

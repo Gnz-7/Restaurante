@@ -7,45 +7,78 @@ public class Admin extends JFrame {
 
     public Admin() {
         setTitle("Panel de Administrador");
-        setSize(450, 350);
+        setSize(500, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setResizable(false);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(240, 248, 255));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(15, 15, 15, 15);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        JLabel titulo = new JLabel("Panel de Administrador", SwingConstants.CENTER);
-        titulo.setFont(new Font("Arial", Font.BOLD, 20));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        panel.add(titulo, gbc);
-
-        gbc.gridwidth = 1;
-        gbc.gridy = 1;
-
-        JButton agregarBtn = new JButton("Agregar Empleado");
-        gbc.gridx = 0;
-        panel.add(agregarBtn, gbc);
-
-        JButton eliminarBtn = new JButton("Eliminar Empleado");
-        gbc.gridx = 1;
-        panel.add(eliminarBtn, gbc);
-
-        JButton modificarBtn = new JButton("Modificar Empleado");
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        panel.add(modificarBtn, gbc);
-
-        JButton estadisticasBtn = new JButton("Ver Estadísticas de Empleados");
-        gbc.gridx = 1;
-        panel.add(estadisticasBtn, gbc);
-
+        // Panel principal
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(245, 245, 245));
         add(panel);
 
-        setVisible(true); // 🔑 necesario para mostrar la ventana
+        // Título
+        JLabel titulo = new JLabel("Panel de Administrador", SwingConstants.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titulo.setForeground(new Color(50, 50, 50));
+        titulo.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        panel.add(titulo, BorderLayout.NORTH);
+
+        // Panel de botones
+        JPanel botonesPanel = new JPanel(new GridLayout(2, 2, 20, 20));
+        botonesPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        botonesPanel.setBackground(new Color(245, 245, 245));
+        panel.add(botonesPanel, BorderLayout.CENTER);
+
+        // Crear botones
+        JButton agregarBtn = crearBoton("Agregar Empleado", new Color(60, 179, 113));
+        JButton eliminarBtn = crearBoton("Eliminar Empleado", new Color(220, 20, 60));
+        JButton modificarBtn = crearBoton("Modificar Empleado", new Color(255, 165, 0));
+        JButton estadisticasBtn = crearBoton("Ver Estadísticas", new Color(70, 130, 180));
+
+        // Acciones de los botones
+        agregarBtn.addActionListener(e -> new AgregarEmpleado());
+        modificarBtn.addActionListener(e -> new ModificarEmpleado());
+
+        // Botón rojo abre BajaEmpleado
+        eliminarBtn.addActionListener(e -> new BajaEmpleado());
+
+        // Abrir VerEstadisticas sin superponer Admin
+        estadisticasBtn.addActionListener(e -> {
+            this.setEnabled(false); // deshabilita Admin
+            VerEstadisticas estadisticas = new VerEstadisticas();
+            estadisticas.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                    Admin.this.setEnabled(true); // vuelve a habilitar Admin al cerrar estadísticas
+                    Admin.this.toFront();
+                }
+            });
+        });
+
+        // Añadir botones al panel
+        botonesPanel.add(agregarBtn);
+        botonesPanel.add(eliminarBtn);
+        botonesPanel.add(modificarBtn);
+        botonesPanel.add(estadisticasBtn);
+
+        setVisible(true);
+    }
+
+    // Método para crear botones estilizados
+    private JButton crearBoton(String texto, Color colorFondo) {
+        JButton btn = new JButton(texto);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setBackground(colorFondo);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 2));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    // Método principal para probar
+    public static void main(String[] args) {
+        new Admin();
     }
 }
