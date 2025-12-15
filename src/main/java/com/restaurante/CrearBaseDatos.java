@@ -37,56 +37,61 @@ public class CrearBaseDatos {
                 "FOREIGN KEY(usuario_id) REFERENCES Usuario(id) ON DELETE CASCADE" +
                 ");";
 
-        // Tabla Comanda
-        String sqlComanda = "CREATE TABLE IF NOT EXISTS Comanda (" +
+         // =========================
+        // TABLA MESA
+        // =========================
+        String sqlMesa = "CREATE TABLE IF NOT EXISTS Mesa (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "numero_mesa INTEGER NOT NULL," +
-                "fecha_hora TEXT NOT NULL," +
-                "estado TEXT DEFAULT 'pendiente'," +
-                "total REAL" +
+                "numero_mesa INTEGER NOT NULL" +
                 ");";
 
-        // Tabla Plato
+        // =========================
+        // TABLA PLATO
+        // =========================
         String sqlPlato = "CREATE TABLE IF NOT EXISTS Plato (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "comanda_id INTEGER NOT NULL," +
                 "nombre TEXT NOT NULL," +
-                "precio REAL NOT NULL," +
-                "numero_comensal INTEGER," +
-                "FOREIGN KEY(comanda_id) REFERENCES Comanda(id) ON DELETE CASCADE" +
+                "precio REAL NOT NULL" +
                 ");";
 
-        // Tabla Acompanamiento
+        // =========================
+        // TABLA ACOMPANAMIENTO
+        // =========================
         String sqlAcompanamiento = "CREATE TABLE IF NOT EXISTS Acompanamiento (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "plato_id INTEGER NOT NULL," +
                 "nombre TEXT NOT NULL," +
-                "precio REAL NOT NULL," +
-                "FOREIGN KEY(plato_id) REFERENCES Plato(id) ON DELETE CASCADE" +
+                "precio REAL NOT NULL" +
                 ");";
 
-        // Tabla Ganancia
+        // =========================
+        // TABLA GANANCIA
+        // =========================
         String sqlGanancia = "CREATE TABLE IF NOT EXISTS Ganancia (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "fecha TEXT NOT NULL," +
-                "monto_total REAL NOT NULL" +
+                "mesa_id INTEGER NOT NULL," +
+                "fecha TEXT NOT NULL," +     // YYYY-MM-DD
+                "hora TEXT NOT NULL," +      // HH:MM:SS
+                "total REAL NOT NULL," +
+                "FOREIGN KEY (mesa_id) REFERENCES Mesa(id) ON DELETE RESTRICT" +
                 ");";
 
+        // =========================
+        // CREAR BASE Y TABLAS
+        // =========================
         try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()) {
 
-            // Crear tablas
             stmt.execute(sqlUsuario);
             stmt.execute(sqlDatosEmpleado);
-            stmt.execute(sqlComanda);
+            stmt.execute(sqlMesa);
             stmt.execute(sqlPlato);
             stmt.execute(sqlAcompanamiento);
             stmt.execute(sqlGanancia);
 
-            System.out.println("Base de datos y tablas creadas correctamente.");
+            System.out.println("Base de datos y todas las tablas creadas correctamente.");
 
         } catch (SQLException e) {
-            System.out.println("Error al crear las tablas: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

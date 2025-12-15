@@ -1,4 +1,4 @@
-package com.restaurante;
+package com.restaurante.Administrador;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,22 +39,10 @@ public class Admin extends JFrame {
         // Acciones de los botones
         agregarBtn.addActionListener(e -> new AgregarEmpleado());
         modificarBtn.addActionListener(e -> new ModificarEmpleado());
-
-        // Botón rojo abre BajaEmpleado
         eliminarBtn.addActionListener(e -> new BajaEmpleado());
 
-        // Abrir VerEstadisticas sin superponer Admin
-        estadisticasBtn.addActionListener(e -> {
-            this.setEnabled(false); // deshabilita Admin
-            VerEstadisticas estadisticas = new VerEstadisticas();
-            estadisticas.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent windowEvent) {
-                    Admin.this.setEnabled(true); // vuelve a habilitar Admin al cerrar estadísticas
-                    Admin.this.toFront();
-                }
-            });
-        });
+        // NUEVO: abrir la clase VerEstadistica al presionar el botón
+        estadisticasBtn.addActionListener(e -> new VerEstadistica());
 
         // Añadir botones al panel
         botonesPanel.add(agregarBtn);

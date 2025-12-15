@@ -1,20 +1,16 @@
 package com.restaurante;
 
+import com.restaurante.Empleado.Empleado;
+import com.restaurante.Administrador.Admin;
+
 import javax.swing.*;
 import java.awt.*;
 import java.security.MessageDigest;
 import java.sql.*;
-import java.util.Date;
-
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import javax.crypto.SecretKey;
 
 public class Restaurante {
 
     private static final String DB_URL = "jdbc:sqlite:Restaurante.db";
-    private static final String SECRET_KEY = "EstaEsUnaClaveMuyLargaDeAlMenos32Bytes!!";
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Restaurante::crearLogin);
@@ -54,39 +50,34 @@ public class Restaurante {
         panel.add(passField, gbc);
 
         JButton ingresarBtn = new JButton("Ingresar");
-        ingresarBtn.setBackground(new Color(70, 130, 180));
-        ingresarBtn.setForeground(Color.WHITE);
-        ingresarBtn.setFocusPainted(false);
-        ingresarBtn.setFont(new Font("Arial", Font.BOLD, 14));
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         panel.add(ingresarBtn, gbc);
 
         ingresarBtn.addActionListener(e -> {
-            String dni = dniField.getText();
+            String dni = dniField.getText().trim();
             String password = new String(passField.getPassword());
 
             try (Connection conn = DriverManager.getConnection(DB_URL);
-                 PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Usuario WHERE dni = ?")) {
+                 PreparedStatement pstmt = conn.prepareStatement(
+                         "SELECT contrasena, rol FROM Usuario WHERE dni = ?")) {
 
                 pstmt.setString(1, dni);
                 ResultSet rs = pstmt.executeQuery();
 
                 if (rs.next()) {
-                    String hashedPasswordDB = rs.getString("contrasena");
+                    String hashDB = rs.getString("contrasena");
                     String rol = rs.getString("rol").trim();
 
-                    if (hashedPasswordDB.equals(hashPassword(password))) {
-                        JOptionPane.showMessageDialog(null, "Login correcto.");
+                    if (hashDB.equals(hashPassword(password))) {
 
-                        // Detectar rol y abrir ventana correspondiente
-                        if ("Administrador".equalsIgnoreCase(rol)) {
-                            frame.dispose();
-                            new Admin();  // abrir ventana Admin
-                        } else if ("Empleado".equalsIgnoreCase(rol)) {
-                            frame.dispose();
-                            new Empleado(dni); // abrir ventana Empleado
+                        frame.dispose();
+
+                        if (rol.equalsIgnoreCase("Administrador")) {
+                            new Admin();
+                        } else if (rol.equalsIgnoreCase("Empleado")) {
+                            new Empleado(dni);
                         } else {
-                            JOptionPane.showMessageDialog(null, "Rol desconocido: " + rol);
+                            JOptionPane.showMessageDialog(null, "Rol desconocido");
                         }
 
                     } else {
@@ -98,8 +89,7 @@ public class Restaurante {
                 }
 
             } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error al iniciar sesión: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
             }
         });
 
@@ -110,12 +100,10 @@ public class Restaurante {
     private static String hashPassword(String password) throws Exception {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] hash = md.digest(password.getBytes());
-        StringBuilder hexString = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (byte b : hash) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
+            sb.append(String.format("%02x", b));
         }
-        return hexString.toString();
+        return sb.toString();
     }
 }

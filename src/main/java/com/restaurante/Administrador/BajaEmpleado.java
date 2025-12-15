@@ -1,4 +1,4 @@
-package com.restaurante;
+package com.restaurante.Administrador;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
