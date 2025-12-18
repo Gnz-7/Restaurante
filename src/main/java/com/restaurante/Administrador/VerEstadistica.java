@@ -11,16 +11,43 @@ import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import java.util.List;
 
+
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
 import java.util.*;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import com.restaurante.Restaurante;
+
 public class VerEstadistica extends JFrame {
 
     private static final String DB_URL = "jdbc:sqlite:Restaurante.db";
+    private Claims claims;
 
-    public VerEstadistica() {
+    // Constructor recibe token JWT
+    public VerEstadistica(String token) {
+        // Verificación del token y rol
+        try {
+            claims = Jwts.parserBuilder()
+                    .setSigningKey(Restaurante.JWT_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String rol = claims.get("rol", String.class);
+            if (!rol.equalsIgnoreCase("Administrador")) {
+                JOptionPane.showMessageDialog(null, "No tienes permisos para acceder a esta sección");
+                dispose();
+                return;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Token inválido: " + e.getMessage());
+            dispose();
+            return;
+        }
+
         setTitle("Estadísticas de Ganancias");
         setSize(900, 650);
         setLocationRelativeTo(null);
@@ -106,7 +133,6 @@ public class VerEstadistica extends JFrame {
         renderer.setDefaultItemLabelsVisible(true);
         renderer.setDefaultItemLabelFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        // Rotar etiquetas del eje X
         plot.getDomainAxis().setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
         // Eje Y fijo de 0 a 1.000.000 en saltos de 100.000
@@ -140,7 +166,6 @@ public class VerEstadistica extends JFrame {
         renderer.setDefaultItemLabelsVisible(true);
         renderer.setDefaultItemLabelFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        // Rotar etiquetas del eje X
         plot.getDomainAxis().setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
         // Eje Y fijo de 0 a 20.000.000 en saltos de 2.000.000
@@ -198,6 +223,6 @@ public class VerEstadistica extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(VerEstadistica::new);
+        // Para probar: new VerEstadistica("token_valido_aqui");
     }
 }

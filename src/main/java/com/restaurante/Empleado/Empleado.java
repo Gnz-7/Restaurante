@@ -3,20 +3,21 @@ package com.restaurante.Empleado;
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class Empleado {
 
     private static final String DB_URL = "jdbc:sqlite:Restaurante.db";
     private JFrame frame;
-
-    // Guardamos referencias de los botones de mesa para cambiar color luego
+    private String token;
+    private String dni;
     private Map<Integer, JButton> botonesMesas = new HashMap<>();
 
-    public Empleado(String dni) {
+    public Empleado(String token, String dni) {
+        this.token = token;
+        this.dni = dni;
+
         frame = new JFrame("Panel de Empleado");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(600, 500);
@@ -27,7 +28,6 @@ public class Empleado {
         frame.setVisible(true);
     }
 
-    // ==================== PANEL DE MESAS ====================
     private void mostrarPanelMesas() {
         JPanel mainPanel = new JPanel(new BorderLayout());
 
@@ -49,12 +49,8 @@ public class Empleado {
             btnMesa.setFont(new Font("Arial", Font.BOLD, 14));
             btnMesa.setFocusPainted(false);
 
-            // Guardamos el botón en el mapa
             botonesMesas.put(mesa, btnMesa);
-
-            // Al presionar, abrir nueva ventana Mesa y pasamos referencia del botón
             btnMesa.addActionListener(e -> new Mesa(mesa, btnMesa));
-
             mesasPanel.add(btnMesa);
         }
 
@@ -68,7 +64,6 @@ public class Empleado {
         frame.repaint();
     }
 
-    // ==================== OBTENER MESAS ====================
     private List<Integer> obtenerMesas() {
         List<Integer> mesas = new ArrayList<>();
         String sql = "SELECT numero_mesa FROM Mesa ORDER BY numero_mesa";
@@ -86,10 +81,5 @@ public class Empleado {
                     "Error cargando mesas: " + e.getMessage());
         }
         return mesas;
-    }
-
-    // ==================== MAIN ====================
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Empleado("12345678"));
     }
 }

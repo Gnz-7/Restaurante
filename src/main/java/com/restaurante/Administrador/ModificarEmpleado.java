@@ -5,6 +5,9 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import com.restaurante.Restaurante;
 
 public class ModificarEmpleado extends JFrame {
 
@@ -15,10 +18,30 @@ public class ModificarEmpleado extends JFrame {
     private JComboBox<String> perfilCombo, rolCombo, anosExperienciaCombo;
     private JTextField sueldoInicialField, sueldoFinalField, recargoField;
     private JCheckBox activoCheck;
+    private Claims claims;
 
-    public ModificarEmpleado() {
+    public ModificarEmpleado(String token) {
+        try {
+            claims = Jwts.parserBuilder()
+                    .setSigningKey(Restaurante.JWT_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String rol = claims.get("rol", String.class);
+            if (!rol.equalsIgnoreCase("Administrador")) {
+                JOptionPane.showMessageDialog(null, "No tienes permisos para acceder a esta sección");
+                dispose();
+                return;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Token inválido: " + e.getMessage());
+            dispose();
+            return;
+        }
+
         setTitle("Modificar Empleado");
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // pantalla completa
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
@@ -41,14 +64,12 @@ public class ModificarEmpleado extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 0;
 
-        // Campos básicos
         empleadosCombo = new JComboBox<>();
         cargarEmpleados();
 
         nombreField = new JTextField();
         apellidoField = new JTextField();
-        dniField = new JTextField();
-        dniField.setEditable(false); // no editable
+        dniField = new JTextField(); dniField.setEditable(false);
         cuilField = new JTextField();
         direccionField = new JTextField();
         localidadField = new JTextField();
@@ -67,7 +88,6 @@ public class ModificarEmpleado extends JFrame {
         addField(formPanel, gbc,"Rol:", rolCombo);
         addField(formPanel, gbc,"Perfil:", perfilCombo);
 
-        // Panel DatosEmpleado
         JPanel datosPanel = new JPanel(new GridBagLayout());
         datosPanel.setBackground(new Color(230,250,250));
         datosPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(60,179,113)),
@@ -93,7 +113,7 @@ public class ModificarEmpleado extends JFrame {
         gbc.gridy++;
         formPanel.add(datosPanel, gbc);
 
-        // Panel General
+        // PANEL GENERAL
         JPanel generalPanel = new JPanel(new GridBagLayout());
         generalPanel.setBackground(new Color(220,220,220));
         generalPanel.setBorder(BorderFactory.createTitledBorder("General"));
@@ -103,7 +123,7 @@ public class ModificarEmpleado extends JFrame {
         gbcGeneral.gridx=0; gbcGeneral.gridy=0;
 
         JButton generalBtn = new JButton("General");
-        generalBtn.setFont(new Font("Segoe UI", Font.BOLD,16));
+        generalBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
         generalBtn.setBackground(new Color(100,149,237));
         generalBtn.setForeground(Color.WHITE);
         generalBtn.setFocusPainted(false);
@@ -143,18 +163,36 @@ public class ModificarEmpleado extends JFrame {
         empleadosCombo.addActionListener(e -> cargarDatosEmpleado());
         guardarBtn.addActionListener(e -> actualizarEmpleado());
 
+        anosExperienciaCombo.addActionListener(e -> actualizarSueldoFinal());
+        sueldoInicialField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void update() { actualizarSueldoFinal(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        });
+
         generalBtn.addActionListener(e -> generalSubPanel.setVisible(!generalSubPanel.isVisible()));
+
         ActionListener modificarSueldos = e -> {
             String texto = montoField.getText();
             if(texto.isEmpty()) return;
             try{
                 double monto = Double.parseDouble(texto);
-                boolean sumar = e.getSource()==sumarBtn;
-                String sql = "UPDATE DatosEmpleado SET sueldo_bruto_inicial = sueldo_bruto_inicial " +
-                        (sumar?"+ ?":"- ?")+", sueldo_bruto_final = sueldo_bruto_inicial * (1 + recargo)";
-                try(Connection conn = DriverManager.getConnection(URL);
-                    PreparedStatement ps = conn.prepareStatement(sql)){
-                    ps.setDouble(1,monto); ps.executeUpdate();
+                boolean sumar = e.getSource() == sumarBtn;
+
+                try(Connection conn = DriverManager.getConnection(URL)){
+                    // 1️⃣ Actualizar sueldo_bruto_inicial de todos los empleados
+                    String sqlInicial = "UPDATE DatosEmpleado SET sueldo_bruto_inicial = sueldo_bruto_inicial + ?";
+                    try(PreparedStatement ps = conn.prepareStatement(sqlInicial)){
+                        ps.setDouble(1, sumar ? monto : -monto);
+                        ps.executeUpdate();
+                    }
+                    // 2️⃣ Recalcular sueldo_bruto_final basado en recargo
+                    String sqlFinal = "UPDATE DatosEmpleado SET sueldo_bruto_final = sueldo_bruto_inicial * (1 + recargo)";
+                    try(PreparedStatement ps = conn.prepareStatement(sqlFinal)){
+                        ps.executeUpdate();
+                    }
+
                     JOptionPane.showMessageDialog(this,"Sueldo de todos los empleados actualizado correctamente");
                     cargarDatosEmpleado();
                 }
@@ -219,17 +257,33 @@ public class ModificarEmpleado extends JFrame {
                 perfilCombo.setSelectedItem(rs.getString("perfil")==null?"null":rs.getString("perfil"));
 
                 sueldoInicialField.setText(rs.getString("sueldo_bruto_inicial"));
-                sueldoFinalField.setText(rs.getString("sueldo_bruto_final"));
                 recargoField.setText(rs.getString("recargo"));
                 anosExperienciaCombo.setSelectedItem(rs.getString("anos_experiencia"));
 
+                actualizarSueldoFinal();
+
                 boolean activo = rs.getInt("esta_activo")==1;
                 activoCheck.setSelected(activo);
-                activoCheck.setVisible(!activo); // solo si está de baja
             }
         }catch(SQLException e){
             JOptionPane.showMessageDialog(this,"Error al cargar datos del empleado","Error",JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void actualizarSueldoFinal(){
+        double sueldoInicial = parseDouble(sueldoInicialField.getText());
+        double porcentaje = switch (anosExperienciaCombo.getSelectedItem().toString()) {
+            case "Menor o igual a 1" -> 0;
+            case "Mayor a 1 y menor a 5" -> 0.2;
+            case "Mayor a 5" -> 0.3;
+            default -> 0;
+        };
+        recargoField.setText(String.valueOf(porcentaje));
+        sueldoFinalField.setText(String.format("%.2f", sueldoInicial * (1 + porcentaje)));
+    }
+
+    private double parseDouble(String s){
+        try { return Double.parseDouble(s); } catch (NumberFormatException e) { return 0; }
     }
 
     private void actualizarEmpleado(){
@@ -249,14 +303,26 @@ public class ModificarEmpleado extends JFrame {
             psU.setString(9,dniField.getText());
             psU.executeUpdate();
 
+            double sueldoInicial = parseDouble(sueldoInicialField.getText());
+            double porcentajeRecargo = switch (anosExperienciaCombo.getSelectedItem().toString()) {
+                case "Menor o igual a 1" -> 0;
+                case "Mayor a 1 y menor a 5" -> 0.2;
+                case "Mayor a 5" -> 0.3;
+                default -> 0;
+            };
+            double sueldoFinal = sueldoInicial * (1 + porcentajeRecargo);
+
             PreparedStatement psD = conn.prepareStatement(sqlDatos);
-            psD.setDouble(1,Double.parseDouble(sueldoInicialField.getText()));
-            psD.setDouble(2,Double.parseDouble(sueldoFinalField.getText()));
-            psD.setString(3,anosExperienciaCombo.getSelectedItem().toString());
-            psD.setDouble(4,Double.parseDouble(recargoField.getText()));
-            psD.setInt(5,activoCheck.isSelected()?1:0);
+            psD.setDouble(1, sueldoInicial);
+            psD.setDouble(2, sueldoFinal);
+            psD.setString(3, anosExperienciaCombo.getSelectedItem().toString());
+            psD.setDouble(4, porcentajeRecargo);
+            psD.setInt(5, activoCheck.isSelected()?1:0);
             psD.setString(6,dniField.getText());
             psD.executeUpdate();
+
+            recargoField.setText(String.valueOf(porcentajeRecargo));
+            sueldoFinalField.setText(String.format("%.2f", sueldoFinal));
 
             JOptionPane.showMessageDialog(this,"Empleado actualizado correctamente");
             cargarDatosEmpleado();
@@ -266,6 +332,6 @@ public class ModificarEmpleado extends JFrame {
     }
 
     public static void main(String[] args){
-        new ModificarEmpleado();
+        // new ModificarEmpleado("token_valido_aqui");
     }
 }

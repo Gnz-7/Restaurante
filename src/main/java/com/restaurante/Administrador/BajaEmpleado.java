@@ -4,33 +4,56 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import java.security.Key;
+import com.restaurante.Restaurante;
 
 public class BajaEmpleado extends JFrame {
 
     private static final String URL = "jdbc:sqlite:Restaurante.db";
     private JTextField buscarDniField;
     private JPanel listaUsuariosPanel;
+    private Claims claims;
 
-    public BajaEmpleado() {
+    // Constructor recibe token JWT
+    public BajaEmpleado(String token) {
+        // Verificamos token y rol
+        try {
+            claims = Jwts.parserBuilder()
+                    .setSigningKey(Restaurante.JWT_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String rol = claims.get("rol", String.class);
+            if (!rol.equalsIgnoreCase("Administrador")) {
+                JOptionPane.showMessageDialog(null, "No tienes permisos para acceder a esta sección");
+                dispose();
+                return;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Token inválido: " + e.getMessage());
+            dispose();
+            return;
+        }
+
         setTitle("Baja de Empleados");
         setSize(600, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setResizable(true);
 
-        // Panel principal
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.setBackground(new Color(245, 245, 245));
         add(mainPanel);
 
-        // Título
         JLabel titulo = new JLabel("Baja de Empleados", SwingConstants.CENTER);
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titulo.setForeground(new Color(50, 50, 50));
         mainPanel.add(titulo, BorderLayout.NORTH);
 
-        // Campo de búsqueda
         JPanel buscarPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         buscarPanel.setBackground(new Color(245, 245, 245));
         buscarPanel.add(new JLabel("Buscar por DNI:"));
@@ -43,7 +66,6 @@ public class BajaEmpleado extends JFrame {
         buscarPanel.add(buscarBtn);
         mainPanel.add(buscarPanel, BorderLayout.SOUTH);
 
-        // Panel de lista de usuarios
         listaUsuariosPanel = new JPanel();
         listaUsuariosPanel.setLayout(new BoxLayout(listaUsuariosPanel, BoxLayout.Y_AXIS));
         listaUsuariosPanel.setBackground(new Color(245, 245, 245));
@@ -52,10 +74,8 @@ public class BajaEmpleado extends JFrame {
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         mainPanel.add(scroll, BorderLayout.CENTER);
 
-        // Acción botón buscar
         buscarBtn.addActionListener(e -> cargarUsuarios(buscarDniField.getText().trim()));
 
-        // Carga inicial
         cargarUsuarios("");
         setVisible(true);
     }
@@ -180,7 +200,9 @@ public class BajaEmpleado extends JFrame {
         }
     }
 
+    // MAIN para pruebas (opcional)
     public static void main(String[] args) {
-        new BajaEmpleado();
+        // Aquí deberías pasar un token válido de prueba
+        // new BajaEmpleado("token_valido_aqui");
     }
 }

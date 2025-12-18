@@ -8,9 +8,17 @@ import java.awt.*;
 import java.security.MessageDigest;
 import java.sql.*;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import java.security.Key;
+import java.util.Date;
+
 public class Restaurante {
 
     private static final String DB_URL = "jdbc:sqlite:Restaurante.db";
+
+    public static final Key JWT_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Restaurante::crearLogin);
@@ -70,12 +78,21 @@ public class Restaurante {
 
                     if (hashDB.equals(hashPassword(password))) {
 
+                        // Generar JWT
+                        String token = Jwts.builder()
+                                .setSubject(dni)
+                                .claim("rol", rol)
+                                .setIssuer("RestauranteApp")
+                                .setExpiration(new Date(System.currentTimeMillis() + 3600_000))
+                                .signWith(JWT_KEY)
+                                .compact();
+
                         frame.dispose();
 
                         if (rol.equalsIgnoreCase("Administrador")) {
-                            new Admin();
+                            new Admin(token);
                         } else if (rol.equalsIgnoreCase("Empleado")) {
-                            new Empleado(dni);
+                            new Empleado(token, dni);
                         } else {
                             JOptionPane.showMessageDialog(null, "Rol desconocido");
                         }

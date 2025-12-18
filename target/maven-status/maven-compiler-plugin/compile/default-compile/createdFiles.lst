@@ -4,6 +4,7 @@ com\restaurante\Empleado\Mesa$ItemMenu.class
 com\restaurante\CrearBaseDatos.class
 com\restaurante\Administrador\BajaEmpleado.class
 com\restaurante\Empleado\Comanda.class
+com\restaurante\Administrador\ModificarEmpleado$1.class
 com\restaurante\Empleado\Mesa.class
 com\restaurante\Administrador\Admin.class
 com\restaurante\Administrador\VerEstadistica.class

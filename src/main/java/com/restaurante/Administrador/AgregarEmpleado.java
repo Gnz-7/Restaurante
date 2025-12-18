@@ -24,23 +24,21 @@ public class AgregarEmpleado extends JFrame {
 
     private JPanel datosEmpleadoPanel; // panel colapsable
 
-    public AgregarEmpleado() {
+    // Recibimos el token JWT
+    public AgregarEmpleado(String token) {
         setTitle("Agregar Usuario");
 
-        // Tamaño relativo a la pantalla
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(screenSize.width * 2 / 3, screenSize.height * 2 / 3);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setResizable(true);
 
-        // Panel principal con BorderLayout
         JPanel mainPanel = new JPanel(new BorderLayout(10,10));
         mainPanel.setBackground(new Color(245, 245, 245));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         add(mainPanel);
 
-        // Título
         JLabel titulo = new JLabel("Agregar Empleado");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titulo.setForeground(new Color(50, 50, 50));
@@ -48,7 +46,6 @@ public class AgregarEmpleado extends JFrame {
         titulo.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         mainPanel.add(titulo, BorderLayout.NORTH);
 
-        // Panel de formulario
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(new Color(245, 245, 245));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -57,7 +54,6 @@ public class AgregarEmpleado extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 0;
 
-        // Campos generales
         JComboBox<String> rolCombo = new JComboBox<>(new String[]{"Administrador", "Empleado"});
         JTextField nombreField = new JTextField();
         JTextField apellidoField = new JTextField();
@@ -80,7 +76,6 @@ public class AgregarEmpleado extends JFrame {
         addField(formPanel, gbc, "Perfil:", perfilCombo);
         addField(formPanel, gbc, "Contraseña:", contrasenaField);
 
-        // Panel colapsable para DatosEmpleado
         datosEmpleadoPanel = new JPanel(new GridBagLayout());
         datosEmpleadoPanel.setBackground(new Color(230, 250, 250));
         datosEmpleadoPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(60,179,113)),
@@ -94,11 +89,11 @@ public class AgregarEmpleado extends JFrame {
 
         sueldoInicialField = new JTextField();
         sueldoFinalField = new JTextField();
-        sueldoFinalField.setEditable(false); // no editable
+        sueldoFinalField.setEditable(false);
 
         anosExperienciaCombo = new JComboBox<>(new String[]{"Menor o igual a 1", "Mayor a 1 y menor a 5", "Mayor a 5"});
         recargoField = new JTextField();
-        recargoField.setEditable(false); // no editable
+        recargoField.setEditable(false);
         activoCheck = new JCheckBox("Activo", true);
 
         addField(datosEmpleadoPanel, gbcDatos, "Sueldo Bruto Inicial:", sueldoInicialField);
@@ -110,10 +105,8 @@ public class AgregarEmpleado extends JFrame {
         gbc.gridy++;
         formPanel.add(datosEmpleadoPanel, gbc);
 
-        // Inicialmente ocultamos panel de DatosEmpleado
         datosEmpleadoPanel.setVisible(false);
 
-        // Escucha cambios en rol
         rolCombo.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 datosEmpleadoPanel.setVisible(rolCombo.getSelectedItem().toString().equals("Empleado"));
@@ -122,7 +115,6 @@ public class AgregarEmpleado extends JFrame {
             }
         });
 
-        // Listener para calcular recargo y sueldo final automáticamente
         anosExperienciaCombo.addItemListener(e -> actualizarSueldoFinal());
         sueldoInicialField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             private void update() { actualizarSueldoFinal(); }
@@ -131,12 +123,10 @@ public class AgregarEmpleado extends JFrame {
             public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
         });
 
-        // Panel con scroll
         JScrollPane scrollPane = new JScrollPane(formPanel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Botón Crear
         JButton crearBtn = new JButton("Crear");
         crearBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
         crearBtn.setBackground(new Color(60, 179, 113));
@@ -149,7 +139,6 @@ public class AgregarEmpleado extends JFrame {
         buttonPanel.add(crearBtn);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // Acción del botón
         crearBtn.addActionListener(e -> insertarEmpleado(
                 rolCombo.getSelectedItem().toString(),
                 nombreField.getText(),
@@ -187,20 +176,17 @@ public class AgregarEmpleado extends JFrame {
             gbc.gridwidth = 1;
             panel.add(label, gbc);
         }
-
         gbc.gridx = 1;
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         field.setBackground(Color.WHITE);
         field.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
         panel.add(field, gbc);
-
         gbc.gridy++;
     }
 
     private void insertarEmpleado(String rol, String nombre, String apellido, String dni,
                                   String cuil, String direccion, String localidad,
                                   String fechaIngreso, String perfil, String contrasena) {
-
         String sqlUsuario = "INSERT INTO Usuario " +
                 "(rol, nombre, apellido, dni, cuil, direccion, localidad, fecha_ingreso, perfil, contrasena) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -243,12 +229,23 @@ public class AgregarEmpleado extends JFrame {
     private void insertarDatosEmpleado(int usuarioId, Connection conn) throws SQLException {
         String sql = "INSERT INTO DatosEmpleado (usuario_id, sueldo_bruto_inicial, sueldo_bruto_final, anos_experiencia, recargo, esta_activo) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
+
+        // calcular recargo y sueldo final aquí para asegurar que se guarde correctamente
+        double sueldoInicial = parseDouble(sueldoInicialField.getText());
+        double porcentaje = switch (anosExperienciaCombo.getSelectedItem().toString()) {
+            case "Menor o igual a 1" -> 0;
+            case "Mayor a 1 y menor a 5" -> 0.2;
+            case "Mayor a 5" -> 0.3;
+            default -> 0;
+        };
+        double sueldoFinal = sueldoInicial * (1 + porcentaje);
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuarioId);
-            ps.setDouble(2, parseDouble(sueldoInicialField.getText()));
-            ps.setDouble(3, parseDouble(sueldoFinalField.getText()));
+            ps.setDouble(2, sueldoInicial);
+            ps.setDouble(3, sueldoFinal);
             ps.setString(4, anosExperienciaCombo.getSelectedItem().toString());
-            ps.setDouble(5, parseDouble(recargoField.getText().replace("%","")) / 100.0);
+            ps.setDouble(5, porcentaje);
             ps.setInt(6, activoCheck.isSelected() ? 1 : 0);
             ps.executeUpdate();
         }
@@ -275,6 +272,6 @@ public class AgregarEmpleado extends JFrame {
     }
 
     public static void main(String[] args) {
-        new AgregarEmpleado();
+        new AgregarEmpleado("token_dummy"); // solo para test
     }
 }
